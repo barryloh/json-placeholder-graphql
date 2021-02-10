@@ -128,11 +128,35 @@ const RootQuery = new GraphQLObjectType({
         postId: {
           type: GraphQLInt,
         },
+        filter: {
+          type: GraphQLString,
+        },
       },
       resolve(parentValue, args) {
-        if (args.postId) {
+        const { filter, postId } = args;
+        if (args.filter !== undefined && args.filter !== null) {
           return axios
-            .get(jhp + "comments?postId=" + args.postId)
+              .get(jhp + "comments")
+              .then((res) => res.data)
+              .then(res => {
+                if (filter.length === 0) {
+                  return res;
+                }
+
+                const loweredFilter = filter.toLowerCase();
+
+                const filteredComments = res.filter(comment => {
+                  const { name, email, body } = comment;
+
+                  return name.toLowerCase().includes(loweredFilter)
+                      || email.toLowerCase().includes(loweredFilter)
+                      || body.toLowerCase().includes(loweredFilter);
+                })
+                return filteredComments;
+              });
+        } else if (postId) {
+          return axios
+            .get(jhp + "comments?postId=" + postId)
             .then((res) => res.data);
         } else {
           return axios.get(jhp + "comments").then((res) => res.data);
